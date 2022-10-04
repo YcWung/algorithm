@@ -1,41 +1,45 @@
 #include <deque>
 #include <functional>
 #include <type_traits>
+#include <memory>
 
-namespace algo
+namespace alg
 {
 
 template <typename Node, int N> class QueuedNTree
 {
 public:
-    int CreatePreOrder(typename Node::BuildInfo &info);
+    Node *CreatePreOrder(typename Node::BuildInfo &info);
+    size_t GetNumberOfNodes() const { return q.size(); }
 
 protected:
-    std::deque<Node> q;
-    auto AllocNode = [&]() -> Node *
-    {
-        q.emplace_back();
-        auto &n = q.back();
-        return &n;
-    };
+    std::deque<std::unique_ptr<Node>> q;
 };
 
-} // namespace algo
+} // namespace alg
 
 /*======================== implementation ==========================*/
 
-namespace algo
+namespace alg
 {
 
 template <typename Node, int N>
-int QueuedNTree<Node, N>::CreatePreOrder(typename Node::BuildInfo &info)
+Node *QueuedNTree<Node, N>::CreatePreOrder(typename Node::BuildInfo &info)
 {
-    auto node = Node::Create(info, AllocNode);
-    if (node == nullptr)
+    std::vector<typename Node::BuildInfo> children_infos;
+    auto node = Node::Build(info, children_infos);
+    if (node != nullptr)
     {
-        return -1;
+        q.emplace_back(node);
     }
-    auto infos = node.template GetChildrenBuildInfos();
+    if (children_infos.size() == static_cast<size_t>(N))
+    {
+        for (int i = 0; i < N; ++i)
+        {
+            node->SetChild(i, CreatePreOrder(children_infos[i]));
+        }
+    }
+    return node;
 }
 
-} // namespace algo
+} // namespace alg
