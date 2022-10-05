@@ -7,6 +7,7 @@
 #include "queued_ntree.hpp"
 #include <numeric>
 #include <exception>
+#include "data_wrap.hpp"
 
 namespace alg
 {
@@ -172,6 +173,8 @@ public:
     using Parent = QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>;
     using Node = KdTreeNode<Scalar, Dim, Index>;
     using BuildInfo = typename Node::BuildInfo;
+    using Vec = typename Node::Vec;
+    using VecCMap = typename Node::VecCMap;
 
     KdTree(const Scalar *pts, Index pt_num, Index *indices = nullptr,
            Index max_pts_per_leaf = 3, Index byte_step = 3 * sizeof(Scalar))
@@ -203,9 +206,36 @@ public:
         Parent::CreatePreOrder(build_info);
     }
 
+    template <typename Dis2Func> struct TraverseInfo
+    {
+        std::vector<std::pair<Scalar, Index>> knn;
+        Dis2Func dis2_func;
+
+        TraverseInfo(Dis2Func f) : dis2_func{std::move(f)} {}
+    };
+
     void knn(Scalar *pt, Index k, std::vector<Index> &k_indices,
              std::vector<Scalar> &k_sqr_distances)
     {
+        VecCMap pt_map{pt};
+        auto dis2_func = [&](const VecCMap &p) -> Scalar
+        { return (p - pt_map).sqauredNorm(); };
+        auto info = TraverseInfo(dis2_func);
+
+        auto cb = [this, &](Node *node) -> std::vector<Node *>
+        {
+            if (node->IsLeaf())
+            {
+                auto leaf = static_cast<Node::Leaf *>(node);
+                for (Index i = 0; i < leaf->num; ++i)
+                {
+                    auto p = build_info.MapPtI[leaf->start + i];
+                    Scalar dis2 = dis2_func(p);
+                }
+                return {};
+            }
+        };
+        TraverseFromRoot(cb);
     }
 
 protected:

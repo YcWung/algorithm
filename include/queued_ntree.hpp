@@ -11,9 +11,18 @@ template <typename Node, int N> class QueuedNTree
 public:
     Node *CreatePreOrder(typename Node::BuildInfo &info);
     size_t GetNumberOfNodes() const { return q.size(); }
+    template <typename F> void TraverseFromRoot(F callback)
+    {
+        if (q.empty())
+        {
+            return;
+        }
+        TraverseSubTree<F>(q.front());
+    }
 
 protected:
     std::deque<std::unique_ptr<Node>> q;
+    template <typename F> static void TraverseSubTree(Node *root, F callback);
 };
 
 } // namespace alg
@@ -40,6 +49,21 @@ Node *QueuedNTree<Node, N>::CreatePreOrder(typename Node::BuildInfo &info)
         }
     }
     return node;
+}
+
+template <typename Node, int N>
+template <typename F>
+void QueuedNTree<Node, N>::TraverseSubTree(Node *root, F callback)
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+    std::vector<Node *> children = callback(root);
+    for (Node *c : children)
+    {
+        TraverseSubTree(c, callback);
+    }
 }
 
 } // namespace alg
