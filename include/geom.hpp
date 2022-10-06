@@ -100,4 +100,32 @@ bool OnRightSide(const BBox<Scalar, Dim> &box, const Vec<Scalar, Dim> &pt,
     return box.max()[axis] - pt[axis] > pt[axis] - box.min()[axis];
 }
 
+template <typename Scalar, int Dim> class Cube
+{
+public:
+    using Vec = Vec<Scalar, Dim>;
+    Vec center;
+    Scalar half_width;
+
+    Cube(const Vec &c = Vec::Zero(), Scalar hw = 1) : center{c}, half_width{hw}
+    {
+    }
+
+    Cube(const BBox &box)
+    {
+        center = box.center();
+        Vec hw = box.max() - center;
+        auto it = std::max_element(hw.data(), hw.data() + Dim);
+        half_width = *it;
+    }
+
+    Cube SubCube(const Vec &start, Scalar w)
+    {
+        Cube c;
+        c.half_width = half_width * w;
+        c.center = center + w * start;
+        return c;
+    }
+};
+
 } // namespace alg

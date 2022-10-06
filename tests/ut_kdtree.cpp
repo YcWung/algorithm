@@ -4,6 +4,7 @@
 #include <Eigen/Geometry>
 
 using namespace alg;
+using namespace alg::kdtree;
 
 const double eps = 1e-4;
 

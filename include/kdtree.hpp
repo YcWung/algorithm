@@ -12,6 +12,9 @@
 namespace alg
 {
 
+namespace kdtree
+{
+
 /**
  * @brief node of kdtree
  *
@@ -32,7 +35,7 @@ public:
      * @brief Information used to build each node
      *
      */
-    struct BuildInfo
+    struct PreorderBuildInfo
     {
         ArrayIndicesView<Scalar, Index> pts;
         Index max_pts_per_leaf;
@@ -111,8 +114,8 @@ public:
      * @param children_infos
      * @return ThisType*
      */
-    static ThisType *Build(BuildInfo &info,
-                           std::vector<BuildInfo> &children_infos)
+    static ThisType *Build(PreorderBuildInfo &info,
+                           std::vector<PreorderBuildInfo> &children_infos)
     {
         children_infos.clear();
         if (info.pts.num <= 0)
@@ -166,14 +169,14 @@ public:
  * @tparam Index
  */
 template <typename Scalar, int Dim, typename Index = int>
-class KdTree : public QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>
+class KdTree : public ntree::QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>
 {
     // static_assert(std::is_signed_v<Index>);
 
 public:
-    using Parent = QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>;
+    using Parent = ntree::QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>;
     using Node = KdTreeNode<Scalar, Dim, Index>;
-    using BuildInfo = typename Node::BuildInfo;
+    using PreorderBuildInfo = typename Node::PreorderBuildInfo;
     using Vec = typename Node::Vec;
     using VecCMap = typename Node::VecCMap;
 
@@ -205,7 +208,7 @@ public:
         Parent::CreatePreOrder(build_info);
     }
 
-    KdTree(BuildInfo &info) : build_info{info}
+    KdTree(PreorderBuildInfo &info) : build_info{info}
     {
         Parent::CreatePreOrder(build_info);
     }
@@ -291,10 +294,12 @@ public:
 
 protected:
     std::vector<Index> indices;
-    BuildInfo build_info;
+    PreorderBuildInfo build_info;
 };
 
 using KdTree3f = KdTree<float, 3, int>;
 using KdTree3d = KdTree<double, 3, int>;
+
+} // namespace kdtree
 
 } // namespace alg

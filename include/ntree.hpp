@@ -4,23 +4,69 @@
 namespace alg
 {
 
+namespace ntree
+{
+
+/*=============================== concepts =============================*/
+
 /**
  * @brief constraints of n-tree node type
  *
  * @tparam Node
  */
 template <typename Node>
-concept ntree_node_t =
-    requires(Node *n, typename Node::BuildInfo info,
-             std::vector<typename Node::BuildInfo> children_infos)
+concept ntree_node_t = requires(Node *n)
 {
-    typename Node::BuildInfo;
     // clang-format off
     { n->GetChildren() } -> std::same_as<std::vector<Node *>>;
-    { Node::Build(info, children_infos) } -> std::same_as<Node *>;
     // clang-format on
     n->SetChild((int)1, n);
 };
+
+/**
+ * @brief constraints of pre-order buildable n-tree node type
+ *
+ * @tparam Node
+ */
+template <typename Node>
+concept preorder_buildable_node_t =
+    requires(Node *n, typename Node::PreorderBuildInfo info,
+             std::vector<typename Node::PreorderBuildInfo> children_infos)
+{
+    requires ntree_node_t<Node>;
+    typename Node::PreorderBuildInfo;
+    // clang-format off
+    { Node::Build(info, children_infos) } -> std::same_as<Node *>;
+    // clang-format on
+};
+
+/**
+ * @brief callback types for traversal of all nodes
+ *
+ * @tparam Node
+ * @tparam F
+ */
+template <typename Node, typename F>
+concept node_cb_t = std::is_invocable_v<F, Node *>;
+
+/**
+ * @brief callback types for traversal of subtrees.
+ * The return node array controls which children to access
+ *
+ * @tparam Node
+ * @tparam F
+ */
+template <typename Node, typename F>
+concept subtree_cb_t = std::is_invocable_r_v<std::vector<Node *>, F, Node *>;
+
+template <typename Node>
+concept insertable_node_t = requires(Node *node)
+{
+    requires ntree_node_t<Node>;
+    typename Node::InsertInfo;
+};
+
+/*==================================== N-tree ===============================*/
 
 /**
  * @brief n-branches tree
@@ -40,7 +86,8 @@ public:
      *
      * @param info
      */
-    void CreatePreOrder(typename Node::BuildInfo &info)
+    void CreatePreOrder(typename Node::PreorderBuildInfo &info) requires
+        preorder_buildable_node_t<Node>
     {
         root = CreatePreOrder_Impl(info);
     }
@@ -51,12 +98,15 @@ public:
      * @tparam F
      * @param callback
      */
-    template <typename F> void TraversePreOrder(F callback)
+    template <typename F>
+    void TraversePreOrder(F callback) requires node_cb_t<Node, F>
     {
         TraversePreOrder(root, callback);
     }
 
-    template <typename F> static void TraversePreOrder(Node *root, F callback);
+    template <typename F>
+    static void TraversePreOrder(Node *root,
+                                 F callback) requires node_cb_t<Node, F>;
 
     /**
      * @brief traverse the tree from root. The callback decides which children
@@ -65,20 +115,30 @@ public:
      * @tparam F
      * @param callback
      */
-    template <typename F> void TraverseFromRoot(F callback)
+    template <typename F>
+    void TraverseFromRoot(F callback) requires subtree_cb_t<Node, F>
     {
         TraverseFromRoot<F>(root, callback);
     }
 
-    template <typename F> static void TraverseFromRoot(Node *root, F callback);
+    template <typename F>
+    static void TraverseFromRoot(Node *root,
+                                 F callback) requires subtree_cb_t<Node, F>;
 
     Node *FindNode(const NodePath &path);
+
+    Node *InsertNode(const NodePath &path,
+                     typename Node::InsertInfo &info) requires
+        insertable_node_t<Node>;
 
 protected:
     Node *root = nullptr;
 
-    Node *CreatePreOrder_Impl(typename Node::BuildInfo &info);
+    Node *CreatePreOrder_Impl(typename Node::PreorderBuildInfo &info) requires
+        preorder_buildable_node_t<Node>;
 };
+
+} // namespace ntree
 
 } // namespace alg
 
@@ -87,10 +147,15 @@ protected:
 namespace alg
 {
 
-template <ntree_node_t Node, int N>
-Node *NTree<Node, N>::CreatePreOrder_Impl(typename Node::BuildInfo &info)
+namespace ntree
 {
-    std::vector<typename Node::BuildInfo> children_infos;
+
+template <ntree_node_t Node, int N>
+Node *NTree<Node, N>::CreatePreOrder_Impl(
+    typename Node::PreorderBuildInfo &info) requires
+    preorder_buildable_node_t<Node>
+{
+    std::vector<typename Node::PreorderBuildInfo> children_infos;
     auto node = Node::Build(info, children_infos);
     if (children_infos.size() == static_cast<size_t>(N))
     {
@@ -104,7 +169,8 @@ Node *NTree<Node, N>::CreatePreOrder_Impl(typename Node::BuildInfo &info)
 
 template <ntree_node_t Node, int N>
 template <typename F>
-void NTree<Node, N>::TraversePreOrder(Node *root, F callback)
+void NTree<Node, N>::TraversePreOrder(Node *root,
+                                      F callback) requires node_cb_t<Node, F>
 {
     if (root == nullptr)
     {
@@ -120,7 +186,8 @@ void NTree<Node, N>::TraversePreOrder(Node *root, F callback)
 
 template <ntree_node_t Node, int N>
 template <typename F>
-void NTree<Node, N>::TraverseFromRoot(Node *root, F callback)
+void NTree<Node, N>::TraverseFromRoot(Node *root,
+                                      F callback) requires subtree_cb_t<Node, F>
 {
     if (root == nullptr)
     {
@@ -152,5 +219,7 @@ Node *NTree<Node, N>::FindNode(const NodePath &path)
     }
     return n;
 }
+
+} // namespace ntree
 
 } // namespace alg
