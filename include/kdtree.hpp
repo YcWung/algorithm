@@ -89,6 +89,12 @@ public:
         }
     };
 
+    static Leaf *CastLeaf(ThisType *n) { return static_cast<Leaf *>(n); }
+    static NonLeaf *CastNonLeaf(ThisType *n)
+    {
+        return static_cast<NonLeaf *>(n);
+    }
+
     /**
      * @brief check if this node is a leaf
      *

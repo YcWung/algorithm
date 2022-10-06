@@ -74,3 +74,50 @@ TEST(KdTreeTest, TestSearch)
     EXPECT_NEAR(dis2_1[0], 0.02, eps);
     EXPECT_NEAR(dis2_1[1], 1.62, eps);
 }
+
+TEST(KdTreeTest, TestFindNode)
+{
+    std::vector<Eigen::Vector3f> pts_1 = {
+        {0, 0, 0},
+        {1, 1, 1},
+        {2, 2, 2},
+    };
+
+    KdTree3f kdtree_1{&pts_1[0][0], static_cast<int>(pts_1.size()), nullptr, 1};
+    EXPECT_EQ(kdtree_1.GetNumberOfNodes(), 5);
+
+    auto node_1 = kdtree_1.FindNode({0});
+    EXPECT_TRUE(node_1 != nullptr);
+    EXPECT_TRUE(node_1->IsLeaf());
+    EXPECT_EQ(KdTree3f::Node::CastLeaf(node_1)->start, 0);
+
+    node_1 = kdtree_1.FindNode({1});
+    EXPECT_TRUE(node_1 != nullptr);
+    EXPECT_TRUE(!node_1->IsLeaf());
+
+    node_1 = kdtree_1.FindNode({0, 0});
+    EXPECT_TRUE(node_1 == nullptr);
+
+    node_1 = kdtree_1.FindNode({1, 0});
+    EXPECT_TRUE(node_1 != nullptr);
+    EXPECT_TRUE(node_1->IsLeaf());
+    EXPECT_EQ(KdTree3f::Node::CastLeaf(node_1)->start, 1);
+
+    node_1 = kdtree_1.FindNode({1, 1});
+    EXPECT_TRUE(node_1 != nullptr);
+    EXPECT_TRUE(node_1->IsLeaf());
+    EXPECT_EQ(KdTree3f::Node::CastLeaf(node_1)->start, 2);
+
+    node_1 = kdtree_1.FindNode({1, 0, 0});
+    EXPECT_TRUE(node_1 == nullptr);
+
+    node_1 = kdtree_1.FindNode({2});
+    EXPECT_TRUE(node_1 == nullptr);
+
+    node_1 = kdtree_1.FindNode({-1});
+    EXPECT_TRUE(node_1 == nullptr);
+
+    node_1 = kdtree_1.FindNode({});
+    EXPECT_TRUE(node_1 != nullptr);
+    EXPECT_TRUE(!node_1->IsLeaf());
+}

@@ -33,6 +33,8 @@ template <ntree_node_t Node, int N> class NTree
     using ThisType = NTree<Node, N>;
 
 public:
+    using NodePath = std::vector<int>;
+
     /**
      * @brief Create by pre-order
      *
@@ -69,6 +71,8 @@ public:
     }
 
     template <typename F> static void TraverseFromRoot(Node *root, F callback);
+
+    Node *FindNode(const NodePath &path);
 
 protected:
     Node *root = nullptr;
@@ -127,6 +131,26 @@ void NTree<Node, N>::TraverseFromRoot(Node *root, F callback)
     {
         TraverseFromRoot(c, callback);
     }
+}
+
+template <ntree_node_t Node, int N>
+Node *NTree<Node, N>::FindNode(const NodePath &path)
+{
+    Node *n = root;
+    for (int i : path)
+    {
+        if (nullptr == n)
+        {
+            return nullptr;
+        }
+        std::vector<Node *> children = n->GetChildren();
+        if (i < 0 || i >= children.size())
+        {
+            return nullptr;
+        }
+        n = children[i];
+    }
+    return n;
 }
 
 } // namespace alg
