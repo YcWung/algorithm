@@ -2,68 +2,31 @@
 #include <functional>
 #include <type_traits>
 #include <memory>
+#include "ntree.hpp"
 
 namespace alg
 {
 
-template <typename Node, int N> class QueuedNTree
+/**
+ * @brief A n-branch tree with all nodes managed in a deque of unique_ptr.
+ *
+ * @tparam Node
+ * @tparam N
+ */
+template <ntree_node_t Node, int N> class QueuedNTree : public NTree<Node, N>
 {
+    using Parent = NTree<Node, N>;
+
 public:
-    Node *CreatePreOrder(typename Node::BuildInfo &info);
-    size_t GetNumberOfNodes() const { return q.size(); }
-    template <typename F> void TraverseFromRoot(F callback)
+    void CreatePreOrder(typename Node::BuildInfo &info)
     {
-        if (q.empty())
-        {
-            return;
-        }
-        TraverseSubTree<F>(q.front());
+        Parent::CreatePreOrder(info);
+        Parent::TraversePreOrder([&](Node *n) { q.emplace_back(n); });
     }
+    size_t GetNumberOfNodes() const { return q.size(); }
 
 protected:
     std::deque<std::unique_ptr<Node>> q;
-    template <typename F> static void TraverseSubTree(Node *root, F callback);
 };
-
-} // namespace alg
-
-/*======================== implementation ==========================*/
-
-namespace alg
-{
-
-template <typename Node, int N>
-Node *QueuedNTree<Node, N>::CreatePreOrder(typename Node::BuildInfo &info)
-{
-    std::vector<typename Node::BuildInfo> children_infos;
-    auto node = Node::Build(info, children_infos);
-    if (node != nullptr)
-    {
-        q.emplace_back(node);
-    }
-    if (children_infos.size() == static_cast<size_t>(N))
-    {
-        for (int i = 0; i < N; ++i)
-        {
-            node->SetChild(i, CreatePreOrder(children_infos[i]));
-        }
-    }
-    return node;
-}
-
-template <typename Node, int N>
-template <typename F>
-void QueuedNTree<Node, N>::TraverseSubTree(Node *root, F callback)
-{
-    if (root == nullptr)
-    {
-        return;
-    }
-    std::vector<Node *> children = callback(root);
-    for (Node *c : children)
-    {
-        TraverseSubTree(c, callback);
-    }
-}
 
 } // namespace alg
