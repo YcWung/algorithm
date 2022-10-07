@@ -1,3 +1,14 @@
+/**
+ * @file kdtree.hpp
+ * @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-10-07
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #pragma once
 
 #include <vector>
@@ -10,6 +21,9 @@
 #include "geom.hpp"
 
 namespace alg
+{
+
+namespace kdtree
 {
 
 /**
@@ -32,7 +46,7 @@ public:
      * @brief Information used to build each node
      *
      */
-    struct BuildInfo
+    struct PreorderBuildInfo
     {
         ArrayIndicesView<Scalar, Index> pts;
         Index max_pts_per_leaf;
@@ -89,6 +103,12 @@ public:
         }
     };
 
+    static Leaf *CastLeaf(ThisType *n) { return static_cast<Leaf *>(n); }
+    static NonLeaf *CastNonLeaf(ThisType *n)
+    {
+        return static_cast<NonLeaf *>(n);
+    }
+
     /**
      * @brief check if this node is a leaf
      *
@@ -105,8 +125,8 @@ public:
      * @param children_infos
      * @return ThisType*
      */
-    static ThisType *Build(BuildInfo &info,
-                           std::vector<BuildInfo> &children_infos)
+    static ThisType *Build(PreorderBuildInfo &info,
+                           std::vector<PreorderBuildInfo> &children_infos)
     {
         children_infos.clear();
         if (info.pts.num <= 0)
@@ -160,14 +180,14 @@ public:
  * @tparam Index
  */
 template <typename Scalar, int Dim, typename Index = int>
-class KdTree : public QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>
+class KdTree : public ntree::QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>
 {
     // static_assert(std::is_signed_v<Index>);
 
 public:
-    using Parent = QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>;
+    using Parent = ntree::QueuedNTree<KdTreeNode<Scalar, Dim, Index>, 2>;
     using Node = KdTreeNode<Scalar, Dim, Index>;
-    using BuildInfo = typename Node::BuildInfo;
+    using PreorderBuildInfo = typename Node::PreorderBuildInfo;
     using Vec = typename Node::Vec;
     using VecCMap = typename Node::VecCMap;
 
@@ -199,7 +219,7 @@ public:
         Parent::CreatePreOrder(build_info);
     }
 
-    KdTree(BuildInfo &info) : build_info{info}
+    KdTree(PreorderBuildInfo &info) : build_info{info}
     {
         Parent::CreatePreOrder(build_info);
     }
@@ -245,7 +265,7 @@ public:
                             std::pop_heap(knn.begin(), knn.end());
                             knn.resize(k);
                         }
-                        if (knn.front().first < k_dis2)
+                        if (knn.size() == k && knn.front().first < k_dis2)
                         {
                             k_dis2 = knn.front().first;
                         }
@@ -285,10 +305,12 @@ public:
 
 protected:
     std::vector<Index> indices;
-    BuildInfo build_info;
+    PreorderBuildInfo build_info;
 };
 
 using KdTree3f = KdTree<float, 3, int>;
 using KdTree3d = KdTree<double, 3, int>;
+
+} // namespace kdtree
 
 } // namespace alg

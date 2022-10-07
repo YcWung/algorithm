@@ -1,3 +1,13 @@
+################################################################################
+ # @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ # @brief
+ # @version 0.1
+ # @date 2022-10-07
+ #
+ #@copyright Copyright (c) 2022
+ #
+################################################################################
+
 cmake_minimum_required(VERSION 3.21)
 
 project(algorithm VERSION 0.0.1 LANGUAGES CXX)
@@ -39,6 +49,7 @@ find_package(GTest REQUIRED)
 #================================== add subdirectories ========================#
 
 add_library(algorithm INTERFACE)
+target_link_libraries(algorithm INTERFACE Eigen3::Eigen)
 target_include_directories(algorithm INTERFACE
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>

@@ -25,7 +25,7 @@ print_usage() {
     echo "                  Debug"
 
     echo "[example]"
-    echo "./build.sh -t Debug"
+    echo "$0 -t Debug"
     exit 1
 }
 
@@ -53,33 +53,16 @@ echo "Build Type:           ${BUILD_TYPE}"
 
 #========================= detect =========================#
 
-#---------------------------- OS --------------------------#
-
-OS="windows"
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    OS="linux"
-elif [[ "$OSTYPE" == "darwin"* ]]; then
-    OS="macos"
-fi
-
 #------------------------ directories ---------------------#
 
 SCRIPT_DIR="$( cd $(dirname $0) && pwd -P )"
 BUILD_DIR="${SCRIPT_DIR}/../build/${BUILD_TYPE}"
 
-#====================== configuration =====================#
+#========================= test ==========================#
 
-VS_GEN="Visual Studio 17 2022"
+TEST_FILES="$(find ${BUILD_DIR}/bin/ -name 'ut_*' -type f -executable)"
+echo $TEST_FILES
 
-#========================= build ==========================#
-
-mkdir -p ${BUILD_DIR}
-cd ${BUILD_DIR}
-
-if [[ "$OS" == "windows" ]]; then
-    conan install "${SCRIPT_DIR}/.." -s build_type=${BUILD_TYPE}
-    cmake "${SCRIPT_DIR}/.." -G "$VS_GEN" -A x64 \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
-        -DTEST_DATA_DIR="${SCRIPT_DIR}/../tests/data"
-    cmake --build . --config ${BUILD_TYPE} -j8
-fi
+for ut in ${TEST_FILES}; do
+    $ut
+done
