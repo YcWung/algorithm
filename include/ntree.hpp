@@ -1,3 +1,14 @@
+/**
+ * @file ntree.hpp
+ * @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-10-07
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #pragma once
 #include <vector>
 
@@ -15,11 +26,9 @@ namespace ntree
  * @tparam Node
  */
 template <typename Node>
-concept ntree_node_t = requires(Node *n)
+concept ntree_node_t = requires(Node *n, std::vector<Node *> nodes)
 {
-    // clang-format off
-    { n->GetChildren() } -> std::same_as<std::vector<Node *>>;
-    // clang-format on
+    nodes = n->GetChildren();
     n->SetChild((int)1, n);
 };
 
@@ -59,13 +68,6 @@ concept node_cb_t = std::is_invocable_v<F, Node *>;
 template <typename Node, typename F>
 concept subtree_cb_t = std::is_invocable_r_v<std::vector<Node *>, F, Node *>;
 
-template <typename Node>
-concept insertable_node_t = requires(Node *node)
-{
-    requires ntree_node_t<Node>;
-    typename Node::InsertInfo;
-};
-
 /*==================================== N-tree ===============================*/
 
 /**
@@ -86,9 +88,11 @@ public:
      *
      * @param info
      */
-    void CreatePreOrder(typename Node::PreorderBuildInfo &info) requires
-        preorder_buildable_node_t<Node>
+    template <typename BuildInfo = Node::PreorderBuildInfo>
+    void
+    CreatePreOrder(BuildInfo &info) requires preorder_buildable_node_t<Node>
     {
+        static_assert(std::is_same_v<BuildInfo, Node::PreorderBuildInfo>);
         root = CreatePreOrder_Impl(info);
     }
 
@@ -109,6 +113,22 @@ public:
                                  F callback) requires node_cb_t<Node, F>;
 
     /**
+     * @brief traverse each node in post-order
+     *
+     * @tparam F
+     * @param callback
+     */
+    template <typename F>
+    void TraversePostOrder(F callback) requires node_cb_t<Node, F>
+    {
+        TraversePostOrder(root, callback);
+    }
+
+    template <typename F>
+    static void TraversePostOrder(Node *root,
+                                  F callback) requires node_cb_t<Node, F>;
+
+    /**
      * @brief traverse the tree from root. The callback decides which children
      * to continue
      *
@@ -125,16 +145,50 @@ public:
     static void TraverseFromRoot(Node *root,
                                  F callback) requires subtree_cb_t<Node, F>;
 
-    Node *FindNode(const NodePath &path);
+    /**
+     * @brief Get the number of all nodes
+     *
+     * @return int
+     */
+    virtual int Count() const
+    {
+        int count = 0;
+        const_cast<ThisType *>(this)->TraversePreOrder([&](Node *) mutable
+                                                       { ++count; });
+        return count;
+    }
 
-    Node *InsertNode(const NodePath &path,
-                     typename Node::InsertInfo &info) requires
-        insertable_node_t<Node>;
+    /**
+     * @brief destruct all nodes
+     *
+     * @return int
+     */
+    int DeleteAllNodes()
+    {
+        int count = 0;
+        const_cast<ThisType *>(this)->TraversePostOrder(
+            [&](Node *node) mutable
+            {
+                delete node;
+                ++count;
+            });
+        root = nullptr;
+        return count;
+    }
+
+    /**
+     * @brief Find a node at a path
+     *
+     * @param path
+     * @return Node*
+     */
+    Node *FindNode(const NodePath &path);
 
 protected:
     Node *root = nullptr;
 
-    Node *CreatePreOrder_Impl(typename Node::PreorderBuildInfo &info) requires
+    template <typename BuildInfo = Node::PreorderBuildInfo>
+    Node *CreatePreOrder_Impl(BuildInfo &info) requires
         preorder_buildable_node_t<Node>;
 };
 
@@ -151,10 +205,12 @@ namespace ntree
 {
 
 template <ntree_node_t Node, int N>
-Node *NTree<Node, N>::CreatePreOrder_Impl(
-    typename Node::PreorderBuildInfo &info) requires
+template <typename BuildInfo>
+Node *NTree<Node, N>::CreatePreOrder_Impl(BuildInfo &info) requires
     preorder_buildable_node_t<Node>
 {
+    static_assert(std::is_same_v<BuildInfo, Node::PreorderBuildInfo>);
+
     std::vector<typename Node::PreorderBuildInfo> children_infos;
     auto node = Node::Build(info, children_infos);
     if (children_infos.size() == static_cast<size_t>(N))
@@ -182,6 +238,23 @@ void NTree<Node, N>::TraversePreOrder(Node *root,
     {
         TraversePreOrder(c, callback);
     }
+}
+
+template <ntree_node_t Node, int N>
+template <typename F>
+void NTree<Node, N>::TraversePostOrder(Node *root,
+                                       F callback) requires node_cb_t<Node, F>
+{
+    if (root == nullptr)
+    {
+        return;
+    }
+    std::vector<Node *> children = root->GetChildren();
+    for (Node *c : children)
+    {
+        TraversePostOrder(c, callback);
+    }
+    callback(root);
 }
 
 template <ntree_node_t Node, int N>

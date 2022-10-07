@@ -1,3 +1,13 @@
+################################################################################
+ # @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ # @brief
+ # @version 0.1
+ # @date 2022-10-07
+ #
+ #@copyright Copyright (c) 2022
+ #
+################################################################################
+
 cmake_minimum_required(VERSION 3.21)
 
 project(algorithm VERSION 0.0.1 LANGUAGES CXX)

@@ -16,3 +16,14 @@
 # build debug version
 ./scripts/build.sh -t Debug
 ```
+
+## Test
+
+```bash
+# test release version
+./scripts/test.sh
+# or ./scripts/test.sh -t Release
+
+# test debug version
+./scripts/test.sh -t Debug
+```

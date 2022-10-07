@@ -1,3 +1,14 @@
+/**
+ * @file ut_kdtree.cpp
+ * @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-10-07
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #include "kdtree.hpp"
 #include <gtest/gtest.h>
 #include "test_path.hpp"

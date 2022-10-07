@@ -1,3 +1,14 @@
+/**
+ * @file kdtree.hpp
+ * @author Yongchao Wang (ycw.puzzle@hotmail.com)
+ * @brief
+ * @version 0.1
+ * @date 2022-10-07
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+
 #pragma once
 
 #include <vector>
@@ -254,7 +265,7 @@ public:
                             std::pop_heap(knn.begin(), knn.end());
                             knn.resize(k);
                         }
-                        if (knn.front().first < k_dis2)
+                        if (knn.size() == k && knn.front().first < k_dis2)
                         {
                             k_dis2 = knn.front().first;
                         }
